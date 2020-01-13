@@ -98,8 +98,10 @@ func (p *parser) parseRecord() *ast.Record {
 
 	for p.tok != token.RBRACE && p.tok != token.EOF {
 		if p.tok == token.CONST {
-			p.errorf("unhandled token: %q", p.tok)
-			p.next()
+			cnst := p.parseRecordConst()
+			if cnst != nil {
+				consts = append(consts, *cnst)
+			}
 		} else if p.tok == token.IDENT {
 			field := p.parseRecordField()
 			if field != nil {
@@ -170,6 +172,68 @@ func (p *parser) parseRecordField() *ast.Field {
 		Doc:   nil, // TODO
 		Ident: ident,
 		Type:  typeExpr,
+	}
+}
+
+// Parse record constants.
+// ex: "const string_const: string = \"Constants can be put here\";"
+func (p *parser) parseRecordConst() *ast.Const {
+	// skip the "const"
+	p.next()
+
+	if p.tok != token.IDENT {
+		p.errorf("expected IDENT but got: %q", p.tok)
+		return nil
+	}
+	ident := ast.Ident{
+		Name: p.lit,
+	}
+	p.next()
+
+	p.expect(token.COLON)
+
+	if p.tok != token.IDENT {
+		p.errorf("expected IDENT but got: %q", p.tok)
+		return nil
+	}
+
+	// TODO later we want to check if all types exist, including the ones refer to custom records
+	typeExpr := ast.TypeExpr{
+		Ident: ast.Ident{
+			Name: p.lit,
+		},
+	}
+	p.next()
+
+	p.expect(token.ASSIGN)
+
+	if p.tok == token.LBRACE {
+		// TODO support constant custom record
+		p.errorf("skipping constant custom record")
+		for p.tok != token.RBRACE && p.tok != token.EOF {
+			p.next()
+		}
+	} else if p.tok != token.INT && p.tok != token.FLOAT && p.tok != token.STRING {
+		p.errorf("unexpected token: %q", p.tok)
+		return nil
+	}
+
+	var val interface{}
+	if p.tok == token.STRING {
+		// remove the first and last "
+		val = p.lit[1 : len(p.lit)-1]
+	} else {
+		val = p.lit
+	}
+	p.next()
+
+	p.expect(token.SEMICOLON)
+
+	return &ast.Const{
+		Doc:   nil, // TODO
+		Ident: ident,
+		Type:  typeExpr,
+		Value: val,
 	}
 }
 

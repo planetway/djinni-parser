@@ -133,6 +133,44 @@ func TestRecordFields(t *testing.T) {
 				Consts: nil,
 			},
 		},
+		{"const", "my_record = record { const string_const: string = \"Constants can be put here\"; }",
+			&ast.Record{
+				Fields: nil,
+				Consts: []ast.Const{
+					ast.Const{
+						Doc: nil,
+						Ident: ast.Ident{
+							Name: "string_const",
+						},
+						Type: ast.TypeExpr{
+							Ident: ast.Ident{
+								Name: "string",
+							},
+						},
+						Value: interface{}("Constants can be put here"),
+					},
+				},
+			},
+		},
+		{"const_emptyf", "my_record = record { const string_const: string = \"\"; }",
+			&ast.Record{
+				Fields: nil,
+				Consts: []ast.Const{
+					ast.Const{
+						Doc: nil,
+						Ident: ast.Ident{
+							Name: "string_const",
+						},
+						Type: ast.TypeExpr{
+							Ident: ast.Ident{
+								Name: "string",
+							},
+						},
+						Value: interface{}(""),
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
