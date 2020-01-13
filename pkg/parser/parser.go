@@ -72,7 +72,6 @@ func (p *parser) parseImport() (i string) {
 func (p *parser) parseLangExt() ast.Ext {
 	ext := ast.Ext{}
 	if !p.tok.IsLangExt() {
-		p.next()
 		return ext
 	}
 	for p.tok.IsLangExt() {
@@ -94,15 +93,103 @@ func (p *parser) parseRecord() *ast.Record {
 	ext := p.parseLangExt()
 	p.expect(token.LBRACE)
 
-	// TODO: handle all the record fields
+	fields := []ast.Field{}
+	consts := []ast.Const{}
 	for p.tok != token.RBRACE && p.tok != token.EOF {
-		p.next()
+		log.Printf("p.tok=%v,p.lit=%v", p.tok, p.lit)
+		if p.tok == token.CONST {
+			// TODO
+		} else if p.tok == token.IDENT {
+			// is a record field
+			field := p.parseRecordField()
+			if field != nil {
+				fields = append(fields, *field)
+			}
+		} else {
+			p.next()
+		}
 	}
 
 	p.expect(token.RBRACE)
 
 	return &ast.Record{
-		Ext: ext,
+		Ext:    ext,
+		Fields: fields,
+		Consts: consts,
+	}
+}
+
+// Parse record fields,
+// ex: "id: i32;"
+func (p *parser) parseRecordField() *ast.Field {
+	ident := ast.Ident{
+		Name: p.lit,
+	}
+	p.next()
+
+	p.expect(token.COLON)
+
+	var typeExpr ast.TypeExpr
+	if p.tok == token.MAP {
+		if t := p.parseMap(); t != nil {
+			typeExpr = *t
+		}
+	} else if p.tok == token.SET {
+		// TODO
+	} else if p.tok == token.LIST {
+		// TODO
+	} else if p.tok == token.IDENT {
+		// TODO later we want to check if all types exist, including the ones refer to custom records
+		typeExpr = ast.TypeExpr{
+			Ident: ast.Ident{
+				Name: p.lit,
+			},
+		}
+	} else {
+		p.errorf("unexpected token: %q", p.tok)
+	}
+	p.next()
+
+	p.expect(token.SEMICOLON)
+
+	return &ast.Field{
+		Doc:   nil, // TODO
+		Ident: ident,
+		Type:  typeExpr,
+	}
+}
+
+func (p *parser) parseMap() *ast.TypeExpr {
+	p.expect(token.LANGLE)
+	if p.tok != token.IDENT {
+		p.errorf("expected IDENT, got %q", p.tok)
+		return nil
+	}
+	l := ast.Ident{
+		Name: p.lit,
+	}
+	p.expect(token.COMMA)
+	if p.tok != token.IDENT {
+		p.errorf("expected IDENT, got %q", p.tok)
+		return nil
+	}
+	r := ast.Ident{
+		Name: p.lit,
+	}
+	p.expect(token.RANGLE)
+	p.expect(token.SEMICOLON)
+	return &ast.TypeExpr{
+		Ident: ast.Ident{
+			Name: "map",
+		},
+		Args: []ast.TypeExpr{
+			ast.TypeExpr{
+				Ident: l,
+			},
+			ast.TypeExpr{
+				Ident: r,
+			},
+		},
 	}
 }
 
