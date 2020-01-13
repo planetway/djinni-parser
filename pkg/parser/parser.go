@@ -93,19 +93,20 @@ func (p *parser) parseRecord() *ast.Record {
 	ext := p.parseLangExt()
 	p.expect(token.LBRACE)
 
-	fields := []ast.Field{}
-	consts := []ast.Const{}
+	var fields []ast.Field
+	var consts []ast.Const
+
 	for p.tok != token.RBRACE && p.tok != token.EOF {
 		if p.tok == token.CONST {
-			// TODO
+			p.errorf("unhandled token: %q", p.tok)
 			p.next()
 		} else if p.tok == token.IDENT {
-			// is a record field
 			field := p.parseRecordField()
 			if field != nil {
 				fields = append(fields, *field)
 			}
 		} else {
+			p.errorf("unhandled token: %q", p.tok)
 			p.next()
 		}
 	}
@@ -259,7 +260,8 @@ func (p *parser) parseInterface() *ast.Interface {
 func (p *parser) parseEnum(isFlags bool) *ast.Enum {
 	p.expect(token.LBRACE)
 
-	options := []ast.EnumOption{}
+	var options []ast.EnumOption
+
 	for p.tok != token.RBRACE && p.tok != token.EOF {
 		if p.tok == token.IDENT {
 			option := ast.EnumOption{
