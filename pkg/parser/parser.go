@@ -4,6 +4,7 @@ package parser
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/SafetyCulture/djinni-parser/pkg/ast"
 	"github.com/SafetyCulture/djinni-parser/pkg/scanner"
@@ -41,6 +42,7 @@ func (p *parser) errorf(msg string, args ...interface{}) {
 
 	// Track all errors and continue parsing.
 	p.errors.add(fmt.Sprintf(msg, args...))
+	log.Printf(msg, args...)
 
 	// bailout if too many errors
 	if len(p.errors) > 10 {
