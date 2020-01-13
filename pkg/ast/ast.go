@@ -171,3 +171,30 @@ type IDLFile struct {
 	Imports   []string   // imports in this file
 	TypeDecls []TypeDecl // top-level declarations; or nil
 }
+
+// ----------------------------------------------------------------------------
+var DataTypes = []string{
+	"bool",
+	"i8",
+	"i16",
+	"i32",
+	"i64",
+	"f32",
+	"f64",
+	"string",
+	"binary",
+	"date",
+	"list",
+	"set",
+	"optional",
+}
+
+// If type is not one of DataTypes, then it's a custom type
+func IsCustomType(t TypeExpr) bool {
+	for i := 0; i < len(DataTypes); i++ {
+		if DataTypes[i] == t.Ident.Name {
+			return false
+		}
+	}
+	return true
+}
