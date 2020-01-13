@@ -156,3 +156,44 @@ func TestRecordFields(t *testing.T) {
 		})
 	}
 }
+
+func TestEnum(t *testing.T) {
+	t.Parallel()
+
+	tests := [...]struct {
+		name string
+		src  string
+		want *ast.Enum
+	}{
+		{"enum", "my_record = enum { option1; }",
+			&ast.Enum{
+				Options: []ast.EnumOption{
+					ast.EnumOption{
+						Ident: ast.Ident{Name: "option1"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			f, err := parser.ParseFile("", tt.src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(f.TypeDecls) != 1 {
+				t.Fatalf("incorrect number of decls; expected 1, got %d:\n%#v", len(f.TypeDecls), f.TypeDecls)
+			}
+
+			d := f.TypeDecls[0]
+			diff := cmp.Diff(tt.want, d.Body)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
+}

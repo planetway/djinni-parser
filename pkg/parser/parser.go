@@ -88,8 +88,8 @@ func (p *parser) parseLangExt() ast.Ext {
 	return ext
 }
 
+// ex: "+c +j +o { ... }"
 func (p *parser) parseRecord() *ast.Record {
-	p.next()
 	ext := p.parseLangExt()
 	p.expect(token.LBRACE)
 
@@ -98,6 +98,7 @@ func (p *parser) parseRecord() *ast.Record {
 	for p.tok != token.RBRACE && p.tok != token.EOF {
 		if p.tok == token.CONST {
 			// TODO
+			p.next()
 		} else if p.tok == token.IDENT {
 			// is a record field
 			field := p.parseRecordField()
@@ -254,18 +255,33 @@ func (p *parser) parseInterface() *ast.Interface {
 	}
 }
 
+// ex: "{ ... }"
 func (p *parser) parseEnum(isFlags bool) *ast.Enum {
 	p.expect(token.LBRACE)
 
-	// TODO: handle all options
+	options := []ast.EnumOption{}
 	for p.tok != token.RBRACE && p.tok != token.EOF {
-		p.next()
+		if p.tok == token.IDENT {
+			option := ast.EnumOption{
+				Doc: nil, // TODO
+				Ident: ast.Ident{
+					Name: p.lit,
+				},
+			}
+			options = append(options, option)
+			p.next()
+			p.expect(token.SEMICOLON)
+		} else {
+			p.errorf("unhandled token: %q", p.tok)
+			p.next()
+		}
 	}
 
 	p.expect(token.RBRACE)
 
 	return &ast.Enum{
-		Flags: isFlags,
+		Options: options,
+		Flags:   isFlags,
 	}
 }
 
@@ -289,12 +305,15 @@ func (p *parser) parseTypeDef() ast.TypeDef {
 
 	switch p.tok {
 	case token.RECORD:
+		p.next()
 		return p.parseRecord()
 	case token.INTERFACE:
 		return p.parseInterface()
 	case token.ENUM:
+		p.next()
 		return p.parseEnum(false)
 	case token.FLAGS:
+		p.next()
 		return p.parseEnum(true)
 	default:
 		return nil
