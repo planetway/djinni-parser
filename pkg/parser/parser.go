@@ -96,7 +96,6 @@ func (p *parser) parseRecord() *ast.Record {
 	fields := []ast.Field{}
 	consts := []ast.Const{}
 	for p.tok != token.RBRACE && p.tok != token.EOF {
-		log.Printf("p.tok=%v,p.lit=%v", p.tok, p.lit)
 		if p.tok == token.CONST {
 			// TODO
 		} else if p.tok == token.IDENT {
@@ -119,7 +118,7 @@ func (p *parser) parseRecord() *ast.Record {
 	}
 }
 
-// Parse record fields,
+// Parse record fields.
 // ex: "id: i32;"
 func (p *parser) parseRecordField() *ast.Field {
 	ident := ast.Ident{
@@ -131,13 +130,25 @@ func (p *parser) parseRecordField() *ast.Field {
 
 	var typeExpr ast.TypeExpr
 	if p.tok == token.MAP {
+		p.next()
 		if t := p.parseMap(); t != nil {
 			typeExpr = *t
 		}
 	} else if p.tok == token.SET {
-		// TODO
+		p.next()
+		if t := p.parseDecorated("set"); t != nil {
+			typeExpr = *t
+		}
 	} else if p.tok == token.LIST {
-		// TODO
+		p.next()
+		if t := p.parseDecorated("list"); t != nil {
+			typeExpr = *t
+		}
+	} else if p.tok == token.IDENT && p.lit == "optional" {
+		p.next()
+		if t := p.parseDecorated("optional"); t != nil {
+			typeExpr = *t
+		}
 	} else if p.tok == token.IDENT {
 		// TODO later we want to check if all types exist, including the ones refer to custom records
 		typeExpr = ast.TypeExpr{
@@ -147,8 +158,8 @@ func (p *parser) parseRecordField() *ast.Field {
 		}
 	} else {
 		p.errorf("unexpected token: %q", p.tok)
+		p.next()
 	}
-	p.next()
 
 	p.expect(token.SEMICOLON)
 
@@ -159,6 +170,32 @@ func (p *parser) parseRecordField() *ast.Field {
 	}
 }
 
+func (p *parser) parseDecorated(name string) *ast.TypeExpr {
+	p.expect(token.LANGLE)
+	if p.tok != token.IDENT {
+		p.errorf("expected IDENT, got %q", p.tok)
+		return nil
+	}
+	l := ast.Ident{
+		Name: p.lit,
+	}
+	p.next()
+	p.expect(token.RANGLE)
+
+	return &ast.TypeExpr{
+		Ident: ast.Ident{
+			Name: name,
+		},
+		Args: []ast.TypeExpr{
+			ast.TypeExpr{
+				Ident: l,
+			},
+		},
+	}
+}
+
+// Parse map types.
+// ex: "<string, i32>"
 func (p *parser) parseMap() *ast.TypeExpr {
 	p.expect(token.LANGLE)
 	if p.tok != token.IDENT {

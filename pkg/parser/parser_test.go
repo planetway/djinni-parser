@@ -91,6 +91,25 @@ func TestRecordFields(t *testing.T) {
 						Type:  ast.TypeExpr{Ident: ast.Ident{Name: "i32"}},
 					},
 				},
+				Consts: []ast.Const{},
+			},
+		},
+		{"optional", "my_record = record { opt: optional<string>; }",
+			&ast.Record{
+				Fields: []ast.Field{
+					ast.Field{
+						Ident: ast.Ident{Name: "opt"},
+						Type: ast.TypeExpr{
+							Ident: ast.Ident{Name: "optional"},
+							Args: []ast.TypeExpr{
+								ast.TypeExpr{
+									Ident: ast.Ident{Name: "string"},
+								},
+							},
+						},
+					},
+				},
+				Consts: []ast.Const{},
 			},
 		},
 	}
