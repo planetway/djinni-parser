@@ -105,7 +105,7 @@ type (
 
 	TypeExpr struct {
 		Ident Ident      // expression type name, eg. i32, i64, string, map, set
-		Args  []TypeExpr // arguments to any generic types like map, set and list; or nil
+		Args  []TypeExpr // arguments to any generic types like map, set, list and optional; or nil
 	}
 
 	Field struct {

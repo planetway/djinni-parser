@@ -112,6 +112,27 @@ func TestRecordFields(t *testing.T) {
 				Consts: []ast.Const{},
 			},
 		},
+		{"map", "my_record = record { ma: map<string, i32>; }",
+			&ast.Record{
+				Fields: []ast.Field{
+					ast.Field{
+						Ident: ast.Ident{Name: "ma"},
+						Type: ast.TypeExpr{
+							Ident: ast.Ident{Name: "map"},
+							Args: []ast.TypeExpr{
+								ast.TypeExpr{
+									Ident: ast.Ident{Name: "string"},
+								},
+								ast.TypeExpr{
+									Ident: ast.Ident{Name: "i32"},
+								},
+							},
+						},
+					},
+				},
+				Consts: []ast.Const{},
+			},
+		},
 	}
 
 	for _, tt := range tests {

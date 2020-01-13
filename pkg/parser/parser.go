@@ -52,7 +52,7 @@ func (p *parser) errorf(msg string, args ...interface{}) {
 
 func (p *parser) expect(tok token.Token) {
 	if p.tok != tok {
-		p.errorf("expected %q, got %q", tok, p.tok)
+		p.errorf("expected %q, got %q, p: %#v", tok, p.tok, p)
 	}
 	p.next()
 }
@@ -156,6 +156,7 @@ func (p *parser) parseRecordField() *ast.Field {
 				Name: p.lit,
 			},
 		}
+		p.next()
 	} else {
 		p.errorf("unexpected token: %q", p.tok)
 		p.next()
@@ -198,6 +199,7 @@ func (p *parser) parseDecorated(name string) *ast.TypeExpr {
 // ex: "<string, i32>"
 func (p *parser) parseMap() *ast.TypeExpr {
 	p.expect(token.LANGLE)
+
 	if p.tok != token.IDENT {
 		p.errorf("expected IDENT, got %q", p.tok)
 		return nil
@@ -205,7 +207,10 @@ func (p *parser) parseMap() *ast.TypeExpr {
 	l := ast.Ident{
 		Name: p.lit,
 	}
+	p.next()
+
 	p.expect(token.COMMA)
+
 	if p.tok != token.IDENT {
 		p.errorf("expected IDENT, got %q", p.tok)
 		return nil
@@ -213,8 +218,10 @@ func (p *parser) parseMap() *ast.TypeExpr {
 	r := ast.Ident{
 		Name: p.lit,
 	}
+	p.next()
+
 	p.expect(token.RANGLE)
-	p.expect(token.SEMICOLON)
+
 	return &ast.TypeExpr{
 		Ident: ast.Ident{
 			Name: "map",
