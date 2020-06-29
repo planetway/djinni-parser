@@ -187,6 +187,7 @@ var DataTypes = []string{
 	"list",
 	"set",
 	"optional",
+	"map",
 }
 
 // If type is not one of DataTypes, then it's a custom type

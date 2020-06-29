@@ -124,6 +124,7 @@ func (p *parser) parseRecord() *ast.Record {
 
 // Parse record fields.
 // ex: "id: i32;"
+// ex: "id: optional<list<string>>;"
 func (p *parser) parseRecordField() *ast.Field {
 	ident := ast.Ident{
 		Name: p.lit,
@@ -132,38 +133,11 @@ func (p *parser) parseRecordField() *ast.Field {
 
 	p.expect(token.COLON)
 
-	var typeExpr ast.TypeExpr
-	if p.tok == token.MAP {
-		p.next()
-		if t := p.parseMap(); t != nil {
-			typeExpr = *t
-		}
-	} else if p.tok == token.SET {
-		p.next()
-		if t := p.parseDecorated("set"); t != nil {
-			typeExpr = *t
-		}
-	} else if p.tok == token.LIST {
-		p.next()
-		if t := p.parseDecorated("list"); t != nil {
-			typeExpr = *t
-		}
-	} else if p.tok == token.IDENT && p.lit == "optional" {
-		p.next()
-		if t := p.parseDecorated("optional"); t != nil {
-			typeExpr = *t
-		}
-	} else if p.tok == token.IDENT {
-		// TODO later we want to check if all types exist, including the ones refer to custom records
-		typeExpr = ast.TypeExpr{
-			Ident: ast.Ident{
-				Name: p.lit,
-			},
-		}
-		p.next()
-	} else {
+	typeExpr := p.parseRecordType()
+	if typeExpr == nil {
 		p.errorf("unexpected token: %q", p.tok)
 		p.next()
+		return nil
 	}
 
 	p.expect(token.SEMICOLON)
@@ -171,8 +145,37 @@ func (p *parser) parseRecordField() *ast.Field {
 	return &ast.Field{
 		Doc:   nil, // TODO
 		Ident: ident,
-		Type:  typeExpr,
+		Type:  *typeExpr,
 	}
+}
+
+// ex: "i32"
+// ex: "optional<list<string>>"
+func (p *parser) parseRecordType() *ast.TypeExpr {
+	var typeExpr *ast.TypeExpr
+
+	if p.tok == token.MAP {
+		p.next()
+		typeExpr = p.parseMap()
+	} else if p.tok == token.SET {
+		p.next()
+		typeExpr = p.parseDecorated("set")
+	} else if p.tok == token.LIST {
+		p.next()
+		typeExpr = p.parseDecorated("list")
+	} else if p.tok == token.IDENT && p.lit == "optional" {
+		p.next()
+		typeExpr = p.parseDecorated("optional")
+	} else if p.tok == token.IDENT {
+		// TODO later we want to check if all types exist, including the ones refer to custom records
+		typeExpr = &ast.TypeExpr{
+			Ident: ast.Ident{
+				Name: p.lit,
+			},
+		}
+		p.next()
+	}
+	return typeExpr
 }
 
 // Parse record constants.
@@ -237,27 +240,24 @@ func (p *parser) parseRecordConst() *ast.Const {
 	}
 }
 
+// Parse the content inside the generic set/list/optional types
+// ex: <IDENT>
 func (p *parser) parseDecorated(name string) *ast.TypeExpr {
 	p.expect(token.LANGLE)
-	if p.tok != token.IDENT {
-		p.errorf("expected IDENT, got %q", p.tok)
+
+	typeExpr := p.parseRecordType()
+	if typeExpr == nil {
+		p.errorf("unexpected token: %q", p.tok)
 		return nil
 	}
-	l := ast.Ident{
-		Name: p.lit,
-	}
-	p.next()
+
 	p.expect(token.RANGLE)
 
 	return &ast.TypeExpr{
 		Ident: ast.Ident{
 			Name: name,
 		},
-		Args: []ast.TypeExpr{
-			ast.TypeExpr{
-				Ident: l,
-			},
-		},
+		Args: []ast.TypeExpr{*typeExpr},
 	}
 }
 
